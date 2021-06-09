@@ -1,6 +1,6 @@
 # <pep8 compliant>
 #    Niche Loops, also known as Way too Niche and Peculiar but Actually Necessary Loop Tools
-#    is an add-on that includes a few interresting loop tools
+#    is an add-on that includes a few interesting loop tools
 #    Copyright (C) 2021 Tim Winkelmann
 #
 #    This program is free software: you can redistribute it and/or modify
