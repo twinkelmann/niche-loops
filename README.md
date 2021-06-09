@@ -51,7 +51,7 @@ For the two Adjust Loops operators, I want to implement a drag-to-adjust feature
 
 **Slide to the outside**
 
-For the two Adjust Loops operators, I want to have a dropdown to choose betweenm sliding the points to the inside (current behavior), to the outside, or choosing automatically based on the sliding value.
+For the two Adjust Loops operators, I want to have a dropdown to choose between sliding the points to the inside (current behavior), to the outside, or choosing automatically based on the sliding value.
 It's an extra bit of complexity that wasn't in the reference tools, so I did not implement it in the first release.
 
 ## Contributing
