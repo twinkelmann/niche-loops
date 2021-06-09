@@ -109,7 +109,7 @@ def nl_build_core(type, obj, operator_factor, report):
     # the 2 selected vertices are not on the same ngon
     if ngon_to_cut is None:
         report({'ERROR_INVALID_INPUT'},
-               "The 2 selected vertices are not on the same hexagon")
+               "The 2 selected vertices are not on an hexagon, or not on the same hexagon")
         return {'CANCELLED'}
 
     all_edge_keys = ngon_to_cut.edge_keys
