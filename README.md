@@ -4,7 +4,7 @@
 
 # Niche Loops
 
-...also known as "Way too Niche and Peculiar but Actually Necessary Loop Tools", is an add-on that includes a few interresting loop tools.
+...also known as "Way too Niche and Peculiar but Actually Necessary Loop Tools", is an add-on that includes a few interesting loop tools.
 
 A friend asked me to recreate a few nice features from 3dsmax in Blender, and so I did.
 
