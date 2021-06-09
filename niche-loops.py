@@ -314,7 +314,7 @@ def get_corresponding_indices(face_verts, selected_verts):
 
 
 class NlBuildEnd(bpy.types.Operator):
-    """Build end of edge loop"""
+    """Builds a quad ending to two parallel loops based on the vertex or edge selection"""
 
     bl_label = "Build End"
     bl_idname = "mesh.nicheloops_build_end"
@@ -404,7 +404,7 @@ class NlBuildEnd(bpy.types.Operator):
 
 
 class NlBuildCorner(bpy.types.Operator):
-    """Build corner of edge loop"""
+    """Builds a quad corner based on the vertex selection to make an edge-loop turn"""
 
     bl_label = "Build Corner"
     bl_idname = "mesh.nicheloops_build_corner"
@@ -475,7 +475,7 @@ class NlBuildCorner(bpy.types.Operator):
 
 
 class NlAdjustLoops(bpy.types.Operator):
-    """Adjust the two selected loops"""
+    """Select two or more parallel edges and adjust the value to change the distance between them"""
 
     bl_label = "Adjust Loops"
     bl_idname = "mesh.nicheloops_adjust_loops"
@@ -499,7 +499,7 @@ class NlAdjustLoops(bpy.types.Operator):
 
 
 class NlAdjustAdjacentLoops(bpy.types.Operator):
-    """Adjust the loops on both sides of the selection"""
+    """Select one or more edges and adjust the value to change the positions of the edges on either side of the selected loop"""
 
     bl_label = "Adjust Adjacent Loops"
     bl_idname = "mesh.nicheloops_adjust_adjacent_loops"
