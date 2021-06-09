@@ -25,7 +25,7 @@ import enum
 bl_info = {
     "name":        "Niche Loops",
     "author":      "Tim Winkelmann <twinkelmann@pm.me>",
-    "version":     (1, 0, 0),
+    "version":     (1, 0, 1),
     "blender":     (2, 92, 0),
     "location":    "View3D > Sidebar > Edit Tab / Edit Mode Context Menu",
     "description": "This add-on includes the following operators: Build End, Build Corner, Adjust Loops, Adjust Adjacent Loops",
