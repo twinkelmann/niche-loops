@@ -152,148 +152,6 @@ def nl_build_core(type, obj, operator_factor, report):
         return NlBuildCorner.build_corner(data, all_verts_indices, selected_verts_indices, middle_vertex_index, operator_factor, report)
 
 
-def nl_adjust_loops(obj, adjustment, report):
-    """
-    Core of the Adjust loops logic
-    :return: nothing
-    """
-    data = obj.data
-
-    # we need to switch from Edit mode to Object mode so the selection gets updated
-    # https://blender.stackexchange.com/questions/1412/efficient-way-to-get-selected-vertices-via-python-without-iterating-over-the-en
-    bpy.ops.object.mode_set(mode='OBJECT')
-
-    selected_edges = [i for i in data.edges if i.select is True]
-    num_selected_edges = len(selected_edges)
-
-    # back to whatever mode we were in
-    bpy.ops.object.mode_set(mode='EDIT')
-
-    # we need at least 2 edges
-    if num_selected_edges < 2:
-        report({'ERROR_INVALID_INPUT'}, "At least 2 edges must be selected")
-        return {'CANCELLED'}
-
-    # convert edges to vertices tuple
-    verts = [tuple(selected_edges[i].vertices)
-             for i in range(num_selected_edges)]
-
-    # for each polygon, find all the selected edges they contain
-    num_polygons = len(data.polygons)
-    face_edges = [None] * num_polygons
-    # optimisation: store how many faces have been found alreadyx
-    # that way we can ignore the checks once we reach 2
-    num_edges_found = [0] * num_polygons
-
-    for i in range(num_polygons):
-        edge_keys = list(data.polygons[i].edge_keys)
-
-        # ignore non quads
-        if len(edge_keys) != QUAD:
-            continue
-
-        for j in range(num_selected_edges):
-            # don't stop at 2, because maybe the first 2 are not opposite
-            # it is cheaper to exclude the face because it has more than 2
-            # than by checking if the edges are opposite
-            if num_edges_found[i] >= 3:
-                break
-
-            # only check for reversed keys if we didn't find it in standard order
-            # do this here separately in order to overwrite the data with the reversed keys
-            # if they are the ones that worked, without having to re-reverse them later
-            is_in_edge_keys = verts[j] in edge_keys
-            reversed_keys = reverse(verts[j]) if not is_in_edge_keys else None
-            is_in_edge_reversed_keys = reversed_keys in edge_keys if not is_in_edge_keys else False
-
-            if is_in_edge_keys or is_in_edge_reversed_keys:
-                num_edges_found[i] += 1
-
-                if (face_edges[i] is None):
-                    face_edges[i] = [j]
-                else:
-                    face_edges[i].append(j)
-
-            if is_in_edge_reversed_keys:
-                # store the reversed keys as the normal keys
-                verts[j] = reversed_keys
-
-    # filter the faces
-    filtered = []
-
-    for i in range(num_polygons):
-        # ignore the polygons that don't have exactly 2 selected edges
-        if num_edges_found[i] != 2:
-            continue
-
-        face_data = face_edges[i]
-        edge_keys = data.polygons[i].edge_keys
-        edge_0 = verts[face_data[0]]
-        edge_1 = verts[face_data[1]]
-
-        index_0 = edge_keys.index(edge_0)
-        index_1 = edge_keys.index(edge_1)
-
-        # ignore the polygons where the selected edges are not opposite
-        if abs(index_0 - index_1) != 2:
-            continue
-            # edges are opposite, keep face
-
-        # keep the face index in a tupple for later use
-        # we don't need the second edge anymore. we will find the vertices later manually
-        filtered.append((i, edge_0))
-
-    num_filtered = len(filtered)
-
-    # we need at least 1 edge
-    if num_filtered <= 0:
-        report({'ERROR_INVALID_INPUT'}, "At least 1 edge pair must be selected")
-        return {'CANCELLED'}
-
-    # pair edge keys
-    list_of_2_points = []
-
-    # find the corresponding vertices
-    for i in range(num_filtered):
-        corresponding_vertices = get_corresponding_indices(
-            list(data.polygons[filtered[i][0]].vertices), filtered[i][1])
-
-        # store the lists as strings of space separated ints to quickly remove doubles later
-        # order points to sort them no matter their order
-        list_1 = [min(filtered[i][1][0], corresponding_vertices[0]), max(
-            filtered[i][1][0], corresponding_vertices[0])]
-        list_2 = [min(filtered[i][1][1], corresponding_vertices[1]), max(
-            filtered[i][1][1], corresponding_vertices[1])]
-
-        list_of_2_points.append(list_1)
-        list_of_2_points.append(list_2)
-
-        # TODO: get points on the next faces if we want to slide to the outside later (as an option)
-
-    # remove doubles in the vertices
-    # since the vertices are sorted we can use the first one as the unique key
-    unique_points = list({i[0]: i for i in list_of_2_points}.values())
-    num_unique_points = len(unique_points)
-
-    # start mesh modifications
-    new_mesh = bmesh.from_edit_mesh(data)
-
-    # ensure bmesh internal index tables are fresh
-    new_mesh.verts.ensure_lookup_table()
-
-    for i in range(num_unique_points):
-        points = unique_points[i]
-        center_point = new_mesh.verts[points[0]].co.lerp(
-            new_mesh.verts[points[1]].co, 0.5)
-
-        bmesh.ops.scale(new_mesh, vec=[adjustment, adjustment, adjustment],
-                        space=mathutils.Matrix.Translation(-center_point), verts=[new_mesh.verts[points[0]], new_mesh.verts[points[1]]])
-
-    # sync up bmesh and mesh
-    bmesh.update_edit_mesh(data)
-    new_mesh.free()
-    return {'FINISHED'}
-
 
 def get_corresponding_indices(face_verts, selected_verts):
     """
@@ -489,10 +347,153 @@ class NlAdjustLoops(bpy.types.Operator):
         obj = context.active_object
         return obj is not None and obj.type == 'MESH' and obj.mode == 'EDIT'
 
+    @staticmethod
+    def adjust_loops(obj, adjustment, report):
+        """
+        Core of the Adjust loops logic
+        :return: nothing
+        """
+        data = obj.data
+
+        # we need to switch from Edit mode to Object mode so the selection gets updated
+        # https://blender.stackexchange.com/questions/1412/efficient-way-to-get-selected-vertices-via-python-without-iterating-over-the-en
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        selected_edges = [i for i in data.edges if i.select is True]
+        num_selected_edges = len(selected_edges)
+
+        # back to whatever mode we were in
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        # we need at least 2 edges
+        if num_selected_edges < 2:
+            report({'ERROR_INVALID_INPUT'}, "At least 2 edges must be selected")
+            return {'CANCELLED'}
+
+        # convert edges to vertices tuple
+        verts = [tuple(selected_edges[i].vertices)
+                for i in range(num_selected_edges)]
+
+        # for each polygon, find all the selected edges they contain
+        num_polygons = len(data.polygons)
+        face_edges = [None] * num_polygons
+        # optimisation: store how many faces have been found alreadyx
+        # that way we can ignore the checks once we reach 2
+        num_edges_found = [0] * num_polygons
+
+        for i in range(num_polygons):
+            edge_keys = list(data.polygons[i].edge_keys)
+
+            # ignore non quads
+            if len(edge_keys) != QUAD:
+                continue
+
+            for j in range(num_selected_edges):
+                # don't stop at 2, because maybe the first 2 are not opposite
+                # it is cheaper to exclude the face because it has more than 2
+                # than by checking if the edges are opposite
+                if num_edges_found[i] >= 3:
+                    break
+
+                # only check for reversed keys if we didn't find it in standard order
+                # do this here separately in order to overwrite the data with the reversed keys
+                # if they are the ones that worked, without having to re-reverse them later
+                is_in_edge_keys = verts[j] in edge_keys
+                reversed_keys = reverse(verts[j]) if not is_in_edge_keys else None
+                is_in_edge_reversed_keys = reversed_keys in edge_keys if not is_in_edge_keys else False
+
+                if is_in_edge_keys or is_in_edge_reversed_keys:
+                    num_edges_found[i] += 1
+
+                    if (face_edges[i] is None):
+                        face_edges[i] = [j]
+                    else:
+                        face_edges[i].append(j)
+
+                if is_in_edge_reversed_keys:
+                    # store the reversed keys as the normal keys
+                    verts[j] = reversed_keys
+
+        # filter the faces
+        filtered = []
+
+        for i in range(num_polygons):
+            # ignore the polygons that don't have exactly 2 selected edges
+            if num_edges_found[i] != 2:
+                continue
+
+            face_data = face_edges[i]
+            edge_keys = data.polygons[i].edge_keys
+            edge_0 = verts[face_data[0]]
+            edge_1 = verts[face_data[1]]
+
+            index_0 = edge_keys.index(edge_0)
+            index_1 = edge_keys.index(edge_1)
+
+            # ignore the polygons where the selected edges are not opposite
+            if abs(index_0 - index_1) != 2:
+                continue
+                # edges are opposite, keep face
+
+            # keep the face index in a tupple for later use
+            # we don't need the second edge anymore. we will find the vertices later manually
+            filtered.append((i, edge_0))
+
+        num_filtered = len(filtered)
+
+        # we need at least 1 edge
+        if num_filtered <= 0:
+            report({'ERROR_INVALID_INPUT'}, "At least 1 edge pair must be selected")
+            return {'CANCELLED'}
+
+        # pair edge keys
+        list_of_2_points = []
+
+        # find the corresponding vertices
+        for i in range(num_filtered):
+            corresponding_vertices = get_corresponding_indices(
+                list(data.polygons[filtered[i][0]].vertices), filtered[i][1])
+
+            # store the lists as strings of space separated ints to quickly remove doubles later
+            # order points to sort them no matter their order
+            list_1 = [min(filtered[i][1][0], corresponding_vertices[0]), max(
+                filtered[i][1][0], corresponding_vertices[0])]
+            list_2 = [min(filtered[i][1][1], corresponding_vertices[1]), max(
+                filtered[i][1][1], corresponding_vertices[1])]
+
+            list_of_2_points.append(list_1)
+            list_of_2_points.append(list_2)
+
+            # TODO: get points on the next faces if we want to slide to the outside later (as an option)
+
+        # remove doubles in the vertices
+        # since the vertices are sorted we can use the first one as the unique key
+        unique_points = list({i[0]: i for i in list_of_2_points}.values())
+        num_unique_points = len(unique_points)
+
+        # start mesh modifications
+        new_mesh = bmesh.from_edit_mesh(data)
+
+        # ensure bmesh internal index tables are fresh
+        new_mesh.verts.ensure_lookup_table()
+
+        for i in range(num_unique_points):
+            points = unique_points[i]
+            center_point = new_mesh.verts[points[0]].co.lerp(
+                new_mesh.verts[points[1]].co, 0.5)
+
+            bmesh.ops.scale(new_mesh, vec=[adjustment, adjustment, adjustment],
+                            space=mathutils.Matrix.Translation(-center_point), verts=[new_mesh.verts[points[0]], new_mesh.verts[points[1]]])
+
+        # sync up bmesh and mesh
+        bmesh.update_edit_mesh(data)
+        new_mesh.free()
+        return {'FINISHED'}
+
     def execute(self, context):
         obj = context.active_object
 
-        return nl_adjust_loops(obj, self.adjustment, self.report)
+        return self.adjust_loops(obj, self.adjustment, self.report)
 
     def invoke(self, context, event):
         return self.execute(context)
