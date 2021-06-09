@@ -57,6 +57,6 @@ It's an extra bit of complexity that wasn't in the reference tools, so I did not
 ## Contributing
 
 Any contributions, bug fixes, or simply bug reports are well appreciated !
-Feel free to create a issue on Github for feature requests too, but please keep them about the existing operators for now.
+Feel free to create an issue on Github for feature requests too, but please keep them about the existing operators for now.
 
 If you would like me to develop  an addon for you (paid work), feel free to get in touch by email twinkelmann(at)pm.me, or on Discord `twinkelmann#6921`
