@@ -25,7 +25,7 @@ import enum
 bl_info = {
     "name":        "Niche Loops",
     "author":      "Tim Winkelmann <twinkelmann@pm.me>",
-    "version":     (1, 0, 1),
+    "version":     (1, 0, 2),
     "blender":     (2, 92, 0),
     "location":    "View3D > Sidebar > Edit Tab / Edit Mode Context Menu",
     "description": "This add-on includes the following operators: Build End, Build Corner, Adjust Loops, Adjust Adjacent Loops",
@@ -240,7 +240,6 @@ class NlBuildEnd(bpy.types.Operator):
             report({'WARNING'},
                    "Could not build end. Result might not be as expected")
             bmesh.update_edit_mesh(data)
-            new_mesh.free()
             return {'FINISHED'}
 
         center_point = (new_verts[0].co + new_verts[1].co) / 2
@@ -250,7 +249,6 @@ class NlBuildEnd(bpy.types.Operator):
 
         # sync up bmesh and mesh
         bmesh.update_edit_mesh(data)
-        new_mesh.free()
         return {'FINISHED'}
 
     def execute(self, context):
@@ -321,7 +319,6 @@ class NlBuildCorner(bpy.types.Operator):
 
         # sync up bmesh and mesh
         bmesh.update_edit_mesh(data)
-        new_mesh.free()
         return {'FINISHED'}
 
     def execute(self, context):
@@ -487,7 +484,6 @@ class NlAdjustLoops(bpy.types.Operator):
 
         # sync up bmesh and mesh
         bmesh.update_edit_mesh(data)
-        new_mesh.free()
         return {'FINISHED'}
 
     def execute(self, context):
@@ -632,7 +628,6 @@ class NlAdjustAdjacentLoops(bpy.types.Operator):
 
         # sync up bmesh and mesh
         bmesh.update_edit_mesh(data)
-        new_mesh.free()
         return {'FINISHED'}
 
     def execute(self, context):
